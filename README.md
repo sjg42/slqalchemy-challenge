@@ -1,2 +1,2 @@
-# slqlchemy-challenge
+# sqlalchemy-challenge
  
