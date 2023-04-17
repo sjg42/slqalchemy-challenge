@@ -33,9 +33,6 @@ Base.prepare(autoload_with=engine)
 Measurement = Base.classes.measurement
 Station = Base.classes.station
 
-# Create our session (link) from Python to the DB
-session = Session(bind=engine)
-
 #################################################
 # Flask Setup
 #################################################
@@ -68,6 +65,9 @@ def home():
 
 @app.route('/api/v1.0/precipitation')
 def prcp():
+    # Create our session (link) from Python to the DB
+    session = Session(bind=engine)
+
     #latest_date in the Measurement DB is 2017-08-23
     latest_date = dt.date(2017,8,23)
     
@@ -94,6 +94,9 @@ def prcp():
             resultsDict[res.date].append(res.prcp)
         else:
             resultsDict[res.date] = [res.prcp]
+    
+    # Close session
+    session.close()
         
     #return a Jsonified resultsList
     return jsonify(resultsDict)
@@ -104,6 +107,9 @@ def prcp():
 #---------------------------
 @app.route('/api/v1.0/stations')
 def stations_list():
+    # Create our session (link) from Python to the DB
+    session = Session(bind=engine)
+
     #query for the stations
     results = session.query(Station.id, Station.station)
     
@@ -116,6 +122,10 @@ def stations_list():
             'Station Name': res.station
         }
         stationList.append(stationDict)
+    
+    # Close session
+    session.close()
+
     return jsonify(stationList)
 
 
@@ -125,6 +135,9 @@ def stations_list():
 #---------------------------
 @app.route("/api/v1.0/tobs")
 def tobs():
+    # Create our session (link) from Python to the DB
+    session = Session(bind=engine)
+
     latest_date = dt.date(2017,8,23) #latest date in Measurement DB
     
     #calculate the date one year before the last date in the DB
@@ -151,6 +164,9 @@ def tobs():
         }
         tempsList.append(tempsDict)
 
+    # Close session
+    session.close()
+
     #return the most active station's temperature observations from the last year
     return (jsonify(tempsList))
 
@@ -160,6 +176,9 @@ def tobs():
 #---------------------------
 @app.route('/api/v1.0/<start>')
 def start_report(start):
+    # Create our session (link) from Python to the DB
+    session = Session(bind=engine)
+    
     latest_date = dt.date(2017,8,23) #latest date in Measurement DB
     earliest_date = dt.date(2010,1,1) #earliest date in Measurement DB
     try:
@@ -187,11 +206,17 @@ def start_report(start):
             #store results of query
             (minimum,maximum,average) = results[0]
 
+            # Close session
+            session.close()
+
             return (f"The following is a summary of observed temperature date from {date} to {latest_date}. <br>"
                     f"Minimum Observed temp: {minimum} deg F <br>"
                     f"Maximum Observed temp: {maximum} deg F <br>"
                     f"Average Observed temp: {average:.2f} deg F")
     except ValueError:
+        # Close session
+        session.close()
+
         return("Provided date was not in the correct format. <br>"
                "Enter date in the format YYYY-MM-DD.")
 
@@ -202,6 +227,9 @@ def start_report(start):
 
 @app.route('/api/v1.0/<start>/<end>')
 def start_end_report(start,end):
+    # Create our session (link) from Python to the DB
+    session = Session(bind=engine)
+    
     latest_date = dt.date(2017,8,23) #latest date in Measurement DB
     earliest_date = dt.date(2010,1,1) #earliest date in Measurement DB
     try:
@@ -218,10 +246,16 @@ def start_end_report(start,end):
 
         #check if dates are valid
         if s_date>latest_date or s_date<earliest_date:
+            # Close session
+            session.close()
+
             return (f"Start Date is outside the valide range. <br>"
                     f"Date must be within 2010-01-01 and 2017-08-23.")
         
         if e_date>latest_date or e_date<earliest_date:
+            # Close session
+            session.close()
+            
             return (f"End Date is outside the valide range. <br>"
                     f"Date must be between {s_date} and 2017-08-23.")
         
@@ -237,11 +271,17 @@ def start_end_report(start,end):
             #store results of query
             (minimum,maximum,average) = results[0]
 
+            # Close session
+            session.close()
+
             return (f"The following is a summary of observed temperature date from {s_date} to {e_date}. <br>"
                     f"Minimum Observed temp: {minimum} deg F <br>"
                     f"Maximum Observed temp: {maximum} deg F <br>"
                     f"Average Observed temp: {average:.2f} deg F")
     except ValueError:
+        # Close session
+        session.close()
+        
         return("One or both of the provided dates were not in the correct format. <br>"
                "Enter dates in the format YYYY-MM-DD.")
 
